@@ -1,0 +1,29 @@
+{
+  "name": "my-hardhat-project",
+  "version": "1.0.0",
+  "description": "A Hardhat project for deploying and testing MyContract on the Sepolia testnet.",
+  "main": "scripts/deploy.ts",
+  "scripts": {
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.ts --network sepolia"
+  },
+  "dependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.14",
+    "@openzeppelin/contracts": "^5.0.0",
+    "ethers": "^6.8.0",
+    "hardhat": "^2.19.0"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-etherscan": "^3.1.0",
+    "@typechain/hardhat": "^8.0.0",
+    "chai": "^4.3.0",
+    "hardhat-gas-reporter": "^1.0.8",
+    "ts-node": "^10.9.0",
+    "typescript": "^4.9.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}
