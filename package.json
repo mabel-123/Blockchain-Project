@@ -5,21 +5,40 @@
   "main": "scripts/deploy.ts",
   "scripts": {
     "test": "hardhat test",
-    "deploy": "hardhat run scripts/deploy.ts --network sepolia"
+    "test:coverage": "hardhat coverage",
+    "compile": "hardhat compile",
+    "clean": "hardhat clean",
+    "node": "hardhat node",
+    "deploy": "hardhat run scripts/deploy.ts --network sepolia",
+    "deploy:all": "hardhat run scripts/deploy-all.ts --network sepolia",
+    "deploy:mycontract": "hardhat run scripts/deploy-mycontract.ts --network sepolia",
+    "deploy:mytoken": "hardhat run scripts/deploy-mytoken.ts --network sepolia",
+    "deploy:credentials": "hardhat run scripts/deploy-credentials-store.ts --network sepolia",
+    "deploy:local": "hardhat run scripts/deploy-all.ts --network localhost",
+    "verify": "hardhat verify --network sepolia",
+    "gas": "REPORT_GAS=true hardhat test",
+    "lint": "npx eslint . --ext .ts",
+    "lint:fix": "npx eslint . --ext .ts --fix",
+    "setup": "npx hardhat run scripts/setup-project.ts",
+    "save-deployment": "npx hardhat run scripts/save-deployment-info.ts",
+    "run-tests": "npx hardhat run scripts/run-tests.ts"
   },
   "dependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.14",
     "@openzeppelin/contracts": "^5.0.0",
+    "dotenv": "^16.3.1",
     "ethers": "^6.8.0",
     "hardhat": "^2.19.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-etherscan": "^3.1.0",
     "@typechain/hardhat": "^8.0.0",
+    "@types/node": "^20.0.0",
     "chai": "^4.3.0",
     "hardhat-gas-reporter": "^1.0.8",
+    "solidity-coverage": "^0.8.0",
     "ts-node": "^10.9.0",
     "typescript": "^4.9.0"
   },

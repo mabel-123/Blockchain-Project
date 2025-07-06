@@ -14,7 +14,7 @@ async function main() {
 
   // Get contract instances
   const MyToken = await ethers.getContractFactory("MyToken");
-  const token = MyToken.attach(tokenAddress);
+  const token = MyToken.attach(tokenAddress) as any;
 
   console.log("Token contract address:", tokenAddress);
   console.log("Target address:", targetAddress);

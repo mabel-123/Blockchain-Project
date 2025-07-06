@@ -1,41 +1,24 @@
-# Blockchain Project - Distributed Systems and Blockchains Security
+# 🏗️ Blockchain Smart Contract Project
 
-This project implements a custom ERC20 token with multi-signature functionality and an education credentials verification system on the Sepolia testnet.
+A comprehensive Hardhat project featuring multiple smart contracts for education credential verification with ERC20 token integration.
 
-## Project Overview
+## 📋 Project Overview
 
-### MyToken (ERC20 Token)
-- **Name**: Group 3 Token
-- **Symbol**: G3TK
-- **Features**:
-  - ETH-to-token conversion (automatic and manual)
-  - Multi-signature minting control (3 approvers required)
-  - Multi-signature withdrawal control (2 out of 3 approvers)
-  - Secure token operations with proper access control
+This project contains three main smart contracts:
 
-### UBaEducationCredentialsStore
-- **Purpose**: Education credentials verification system
-- **Features**:
-  - Store credential hashes on blockchain (not plaintext)
-  - Verify credentials by paying with custom tokens
-  - Owner-controlled credential management
-  - Secure fee collection and withdrawal
+1. **MyContract** - A simple contract with basic value storage and retrieval
+2. **MyToken** - An ERC20 token with ETH conversion and multi-sig functionality
+3. **UBaEducationCredentialsStore** - A credential verification system using custom tokens
 
-## Security Features
-
-### Why Store Hashes Instead of Plaintext?
-1. **Privacy Protection**: Sensitive educational data is not exposed on the public blockchain
-2. **Gas Efficiency**: Storing hashes is much cheaper than storing large JSON documents
-3. **Data Integrity**: Hashes provide cryptographic proof of document authenticity
-4. **Compliance**: Meets data protection requirements while maintaining verifiability
-
-## Development Environment Setup
+## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js (v16 or higher)
 - npm or yarn
 - MetaMask wallet
-- Sepolia testnet ETH
+- Alchemy account (for RPC endpoint)
+- Etherscan account (for contract verification)
 
 ### Installation
 
@@ -50,217 +33,264 @@ This project implements a custom ERC20 token with multi-signature functionality 
    npm install
    ```
 
-3. **Configure environment**
-   - Copy `.env.example` to `.env` (if available)
-   - Add your configuration values
+3. **Set up environment variables**
+   ```bash
+   cp env.example .env
+   ```
+   
+   Edit `.env` file with your actual values:
+   ```env
+   ALCHEMY_API_KEY=your_alchemy_api_key_here
+   SEPOLIA_PRIVATE_KEY=your_private_key_here
+   ETHERSCAN_API_KEY=your_etherscan_api_key_here
+   ```
 
-### Required API Keys
-- **Alchemy/Infura**: For Sepolia testnet access
-- **Etherscan**: For contract verification
-- **Private Key**: Your wallet's private key for deployment
+4. **Compile contracts**
+   ```bash
+   npm run compile
+   ```
 
-## Configuration
+## 🧪 Testing
 
-### Update hardhat.config.ts
-Replace the placeholder values in `hardhat.config.ts`:
-
-```typescript
-const ALCHEMY_API_KEY = "your-alchemy-api-key";
-const SEPOLIA_PRIVATE_KEY = "your-private-key";
-const ETHERSCAN_API_KEY = "your-etherscan-api-key";
-```
-
-### Multi-Signature Addresses
-Update the multi-signature addresses in `deploy.ts`:
-
-```typescript
-const multisigOwners = [
-  "0xYourAddress1",
-  "0xYourAddress2", 
-  "0xYourAddress3"
-];
-```
-
-## Contract Deployment
-
-### Deploy to Sepolia Testnet
-```bash
-npm run deploy
-```
-
-### Expected Output
-```
-Starting deployment...
-Deploying contracts with account: 0x...
-Account balance: ...
-
-Deploying MyToken contract...
-MyToken deployed to: 0x...
-
-Deploying UBaEducationCredentialsStore contract...
-UBaEducationCredentialsStore deployed to: 0x...
-
-Deployment Summary:
-===================
-MyToken Address: 0x...
-UBaEducationCredentialsStore Address: 0x...
-Verification Fee: 10 tokens
-Target Address for 10 tokens: 0x0874207411f712D90edd8ded353fdc6f9a417903
-```
-
-## Contract Verification
-
-### Verify on Etherscan
-```bash
-npx hardhat verify --network sepolia <CONTRACT_ADDRESS> <CONSTRUCTOR_ARGS>
-```
-
-### Example
-```bash
-# For MyToken
-npx hardhat verify --network sepolia 0x... "0x...,0x...,0x..."
-
-# For UBaEducationCredentialsStore
-npx hardhat verify --network sepolia 0x... "0x..." "10000000000000000000"
-```
-
-## Testing
-
-### Run All Tests
+### Run all tests
 ```bash
 npm test
 ```
 
-### Run Specific Test Files
+### Run specific test files
 ```bash
+npx hardhat test test/MyContract.test.ts
 npx hardhat test test/MyToken.test.ts
 npx hardhat test test/UBaEducationCredentialsStore.test.ts
 ```
 
-### Test Coverage
-The test suite covers:
-- Basic ERC20 functionality
-- ETH-to-token conversion
-- Multi-signature minting security
-- Multi-signature withdrawal security
-- Credential storage and verification
-- Access control and security measures
-- Reentrancy protection
-
-## Token Operations
-
-### Multi-Signature Minting Process
-1. All 3 approvers call `approveMint()`
-2. Owner calls `mint(address, amount)`
-3. Approvals are automatically reset
-
-### Multi-Signature Withdrawal Process
-1. At least 2 out of 3 approvers call `approveWithdraw()`
-2. Owner calls `withdraw(address, amount)`
-3. Approvals are automatically reset
-
-### Token Transfer to Target Address
-After minting tokens to the deployer:
+### Run tests with gas reporting
 ```bash
+npm run gas
+```
+
+### Run comprehensive test suite
+```bash
+npx hardhat run scripts/run-tests.ts
+```
+
+## 🚀 Deployment
+
+### Deploy all contracts
+```bash
+npm run deploy:all
+```
+
+### Deploy individual contracts
+```bash
+# Deploy MyContract only
+npm run deploy:mycontract
+
+# Deploy MyToken only
+npm run deploy:mytoken
+
+# Deploy UBaEducationCredentialsStore only
+npm run deploy:credentials
+```
+
+### Deploy to local network
+```bash
+# Start local node
+npm run node
+
+# Deploy to localhost
+npm run deploy:local
+```
+
+## 📄 Contract Details
+
+### MyContract
+- **Purpose**: Simple value storage and retrieval
+- **Functions**: `setValue()`, `getValue()`
+- **Constructor**: Takes name and initial value
+
+### MyToken
+- **Purpose**: ERC20 token with ETH conversion
+- **Features**:
+  - ETH to token conversion (1 ETH = 1000 tokens)
+  - Multi-sig minting (requires 3 approvals)
+  - Multi-sig withdrawal (requires 2 out of 3 approvals)
+- **Token Details**: "Group 3 Token" (G3TK)
+
+### UBaEducationCredentialsStore
+- **Purpose**: Education credential verification system
+- **Features**:
+  - Store credential hashes on blockchain
+  - Verify credentials with token payment
+  - Multi-sig token management
+  - Credential hash calculation
+- **Verification Fee**: 10 tokens per verification
+
+## 🔧 Available Scripts
+
+```bash
+# Development
+npm run compile          # Compile contracts
+npm run clean           # Clean build artifacts
+npm run node            # Start local Hardhat node
+
+# Testing
+npm test                # Run all tests
+npm run test:coverage   # Run tests with coverage
+npm run gas             # Run tests with gas reporting
+
+# Deployment
+npm run deploy          # Deploy basic contract
+npm run deploy:all      # Deploy all contracts
+npm run deploy:mycontract    # Deploy MyContract
+npm run deploy:mytoken       # Deploy MyToken
+npm run deploy:credentials   # Deploy UBaEducationCredentialsStore
+npm run deploy:local    # Deploy to localhost
+
+# Verification
+npm run verify          # Verify contracts on Etherscan
+```
+
+## 📊 Contract Architecture
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────────┐
+│   MyContract    │    │     MyToken      │    │ UBaEducationCredentials │
+│                 │    │                  │    │         Store           │
+│ - setValue()    │    │ - ETH conversion │    │ - storeCredential()     │
+│ - getValue()    │    │ - Multi-sig mint │    │ - verifyCredential()    │
+│                 │    │ - Multi-sig w/d  │    │ - checkCredential()     │
+└─────────────────┘    └──────────────────┘    └─────────────────────────┘
+                                │
+                                ▼
+                        ┌──────────────────┐
+                        │   Token Payment  │
+                        │   & Verification │
+                        └──────────────────┘
+```
+
+## 🔐 Security Features
+
+- **Multi-signature**: Critical operations require multiple approvals
+- **Reentrancy Protection**: Uses OpenZeppelin's ReentrancyGuard
+- **Access Control**: Owner-only functions for sensitive operations
+- **Input Validation**: Comprehensive parameter validation
+- **Gas Optimization**: Optimized contract code for efficiency
+
+## 📝 Usage Examples
+
+### 1. Deploy and Test MyContract
+```bash
+npm run deploy:mycontract
+npx hardhat test test/MyContract.test.ts
+```
+
+### 2. Deploy and Test MyToken
+```bash
+npm run deploy:mytoken
+npx hardhat test test/MyToken.test.ts
+```
+
+### 3. Deploy and Test Complete System
+```bash
+npm run deploy:all
+npx hardhat test test/UBaEducationCredentialsStore.test.ts
+```
+
+### 4. Transfer Tokens
+```bash
+# Update token address in scripts/transfer-tokens.ts
 npx hardhat run scripts/transfer-tokens.ts --network sepolia
 ```
 
-## MetaMask Integration
-
-### Add Custom Token
-1. Open MetaMask
-2. Go to "Import Tokens"
-3. Enter the deployed MyToken contract address
-4. Token details will auto-populate
-5. Click "Add Custom Token"
-
-### Verify Token Balance
-- Check that 10 tokens are transferred to: `0x0874207411f712D90edd8ded353fdc6f9a417903`
-
-## Credential Verification Process
-
-### 1. Store Credential
-```javascript
-// Owner stores credential hash
-await credentialsStore.storeCredential(credentialHash, studentAddress);
+### 5. Verify Contracts
+```bash
+npm run verify
 ```
 
-### 2. Calculate Credential Hash
-```javascript
-// Generate hash from credential data
-const hash = await credentialsStore.calculateCredentialHash(
-  "UBA2358985",  // matriculation
-  "A",           // cryptology grade
-  "B",           // blockchain grade
-  "A"            // secure software dev grade
-);
+## 🔍 Contract Verification
+
+After deployment, verify your contracts on Etherscan:
+
+```bash
+npx hardhat run scripts/verify-contracts.ts --network sepolia
 ```
 
-### 3. Verify Credential
-```javascript
-// User approves tokens and verifies
-await token.approve(credentialsStore.address, verificationFee);
-await credentialsStore.verifyCredential(credentialHash);
-```
+## 📈 Gas Optimization
 
-## Project Structure
+The contracts are optimized for gas efficiency:
+- Solidity optimizer enabled (200 runs)
+- Efficient data structures
+- Minimal storage operations
+- Optimized function calls
 
-```
-my-hardhat-project/
-├── contracts/
-│   ├── MyToken.sol
-│   └── UBaEducationCredentialsStore.sol
-├── test/
-│   ├── MyToken.test.ts
-│   └── UBaEducationCredentialsStore.test.ts
-├── scripts/
-│   └── deploy.ts
-├── hardhat.config.ts
-├── package.json
-└── README.md
-```
+## 🛠️ Development
 
-## Security Considerations
+### Adding New Contracts
+1. Create contract in `contracts/` directory
+2. Add tests in `test/` directory
+3. Create deployment script in `scripts/` directory
+4. Update this README
 
-### Implemented Security Measures
-- **ReentrancyGuard**: Prevents reentrancy attacks
-- **Ownable**: Access control for administrative functions
-- **Multi-signature**: Requires multiple approvals for critical operations
-- **Input Validation**: Comprehensive parameter validation
-- **Error Handling**: Proper error messages and revert conditions
+### Testing Best Practices
+- Test all public functions
+- Test edge cases and error conditions
+- Test gas usage for critical functions
+- Use descriptive test names
+- Group related tests in describe blocks
 
-### Best Practices
-- Never store sensitive data on-chain
-- Use hashes for data integrity verification
-- Implement proper access controls
-- Test thoroughly before deployment
-- Verify contracts on Etherscan
+## 📚 API Reference
 
-## Troubleshooting
+### MyContract Functions
+- `setValue(uint256 _value)` - Set the contract value
+- `getValue()` - Get the current value
+- `name()` - Get contract name
 
-### Common Issues
-1. **Insufficient ETH**: Ensure you have Sepolia testnet ETH
-2. **API Key Issues**: Verify Alchemy/Infura API keys are correct
-3. **Private Key**: Ensure private key is properly formatted (without 0x prefix)
-4. **Network Issues**: Check network connectivity and API endpoints
+### MyToken Functions
+- `buyTokens()` - Buy tokens with ETH
+- `approveMint()` - Approve minting (multi-sig)
+- `mint(address to, uint256 amount)` - Mint tokens
+- `approveWithdraw()` - Approve withdrawal (multi-sig)
+- `withdraw(address payable to, uint256 amount)` - Withdraw ETH
 
-### Getting Help
-- Check Hardhat documentation: https://hardhat.org/
-- OpenZeppelin documentation: https://docs.openzeppelin.com/
-- Etherscan verification guide: https://docs.etherscan.io/
+### UBaEducationCredentialsStore Functions
+- `storeCredential(bytes32 credentialHash, address owner)` - Store credential
+- `verifyCredential(bytes32 credentialHash)` - Verify credential
+- `checkCredential(bytes32 credentialHash)` - Check if credential exists
+- `getCredentialOwner(bytes32 credentialHash)` - Get credential owner
+- `calculateCredentialHash(...)` - Calculate credential hash
 
-## License
-
-MIT License - see LICENSE file for details.
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Add tests for new functionality
-5. Submit a pull request
+5. Run the test suite
+6. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+If you encounter any issues:
+
+1. Check the test suite: `npm test`
+2. Verify your environment variables
+3. Check network connectivity
+4. Review contract compilation: `npm run compile`
+5. Check gas limits and network configuration
+
+## 🔗 Useful Links
+
+- [Hardhat Documentation](https://hardhat.org/docs)
+- [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/)
+- [Etherscan API](https://docs.etherscan.io/)
+- [Alchemy Documentation](https://docs.alchemy.com/)
+- [Solidity Documentation](https://docs.soliditylang.org/)
 
 ---
 
-**Note**: This project is for educational purposes. Always test thoroughly on testnets before deploying to mainnet.
+**Note**: This is a development project. For production use, ensure thorough testing and security audits.

@@ -1,9 +1,8 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { MyToken } from "../typechain-types";
 
 describe("MyToken", function () {
-  let token: MyToken;
+  let token: any;
   let owner: any, addr1: any, addr2: any, addr3: any, addr4: any;
 
   beforeEach(async () => {
@@ -13,167 +12,268 @@ describe("MyToken", function () {
     await token.waitForDeployment();
   });
 
-  describe("Basic Functionality", function () {
-    it("should have correct initial state", async () => {
+  describe("Deployment", function () {
+    it("should set correct token details", async () => {
       expect(await token.name()).to.equal("Group 3 Token");
       expect(await token.symbol()).to.equal("G3TK");
       expect(await token.decimals()).to.equal(18);
-      expect(await token.tokenPrice()).to.equal(ethers.parseEther("0.001"));
     });
 
-    it("should transfer tokens and update balances", async () => {
-      // First mint some tokens to owner
-      await token.connect(owner).approveMint();
-      await token.connect(addr1).approveMint();
-      await token.connect(addr2).approveMint();
-      await token.connect(owner).mint(owner.address, 100);
-      
-      await token.connect(owner).transfer(addr1.address, ethers.parseUnits("5", 18));
-      expect(await token.balanceOf(addr1.address)).to.equal(ethers.parseUnits("5", 18));
+    it("should set correct approvers", async () => {
+      expect(await token.approvers(0)).to.equal(owner.address);
+      expect(await token.approvers(1)).to.equal(addr1.address);
+      expect(await token.approvers(2)).to.equal(addr2.address);
     });
 
-    it("should fail transfer with insufficient balance", async () => {
+    it("should fail deployment with zero address approver", async () => {
+      const MyToken = await ethers.getContractFactory("MyToken");
       await expect(
-        token.connect(addr1).transfer(addr2.address, ethers.parseUnits("1", 18))
-      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+        MyToken.deploy([ethers.ZeroAddress, addr1.address, addr2.address])
+      ).to.be.revertedWith("Approver cannot be zero address");
+    });
+
+    it("should set correct token price", async () => {
+      expect(await token.tokenPrice()).to.equal(ethers.parseEther("0.001"));
     });
   });
 
   describe("ETH to Token Conversion", function () {
     it("should convert ETH to tokens on receive", async () => {
       const ethAmount = ethers.parseEther("1");
-      await addr1.sendTransaction({ to: await token.getAddress(), value: ethAmount });
+      const expectedTokens = ethAmount / ethers.parseEther("0.001");
       
-      const expectedTokens = ethAmount / ethers.parseEther("0.001"); // 1000 tokens
-      expect(await token.balanceOf(addr1.address)).to.equal(expectedTokens);
+      await addr3.sendTransaction({ to: await token.getAddress(), value: ethAmount });
+      expect(await token.balanceOf(addr3.address)).to.equal(expectedTokens);
     });
 
     it("should convert ETH to tokens via buyTokens function", async () => {
       const ethAmount = ethers.parseEther("0.5");
-      await token.connect(addr1).buyTokens({ value: ethAmount });
+      const expectedTokens = ethAmount / ethers.parseEther("0.001");
       
-      const expectedTokens = ethAmount / ethers.parseEther("0.001"); // 500 tokens
-      expect(await token.balanceOf(addr1.address)).to.equal(expectedTokens);
+      await token.connect(addr3).buyTokens({ value: ethAmount });
+      expect(await token.balanceOf(addr3.address)).to.equal(expectedTokens);
     });
 
-    it("should fail with insufficient ETH for conversion", async () => {
+    it("should fail with insufficient ETH", async () => {
       const smallAmount = ethers.parseEther("0.0001"); // Less than token price
       await expect(
-        addr1.sendTransaction({ to: await token.getAddress(), value: smallAmount })
+        addr3.sendTransaction({ to: await token.getAddress(), value: smallAmount })
       ).to.be.revertedWith("Insufficient ETH sent for conversion");
+    });
+
+    it("should handle multiple ETH conversions", async () => {
+      await addr3.sendTransaction({ to: await token.getAddress(), value: ethers.parseEther("1") });
+      await addr4.sendTransaction({ to: await token.getAddress(), value: ethers.parseEther("2") });
+      
+      expect(await token.balanceOf(addr3.address)).to.equal(ethers.parseUnits("1000", 18));
+      expect(await token.balanceOf(addr4.address)).to.equal(ethers.parseUnits("2000", 18));
     });
   });
 
-  describe("Multi-Signature Minting", function () {
-    it("should allow only multisig owners to approve minting", async () => {
+  describe("ERC20 Standard Functions", function () {
+    beforeEach(async () => {
+      // Give tokens to addr3 for testing
+      await addr3.sendTransaction({ to: await token.getAddress(), value: ethers.parseEther("1") });
+    });
+
+    it("should transfer tokens correctly", async () => {
+      const transferAmount = ethers.parseUnits("100", 18);
+      await token.connect(addr3).transfer(addr4.address, transferAmount);
+      
+      expect(await token.balanceOf(addr4.address)).to.equal(transferAmount);
+      expect(await token.balanceOf(addr3.address)).to.equal(ethers.parseUnits("900", 18));
+    });
+
+    it("should fail transfer with insufficient balance", async () => {
+      const largeAmount = ethers.parseUnits("2000", 18);
+      await expect(
+        token.connect(addr3).transfer(addr4.address, largeAmount)
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    });
+
+    it("should handle approve and transferFrom", async () => {
+      const approveAmount = ethers.parseUnits("200", 18);
+      await token.connect(addr3).approve(addr4.address, approveAmount);
+      
+      const transferAmount = ethers.parseUnits("150", 18);
+      await token.connect(addr4).transferFrom(addr3.address, addr1.address, transferAmount);
+      
+      expect(await token.balanceOf(addr1.address)).to.equal(transferAmount);
+      expect(await token.allowance(addr3.address, addr4.address)).to.equal(ethers.parseUnits("50", 18));
+    });
+
+    it("should fail transferFrom with insufficient allowance", async () => {
+      await token.connect(addr3).approve(addr4.address, ethers.parseUnits("100", 18));
+      
+      await expect(
+        token.connect(addr4).transferFrom(addr3.address, addr1.address, ethers.parseUnits("150", 18))
+      ).to.be.revertedWith("ERC20: insufficient allowance");
+    });
+  });
+
+  describe("Multi-Sig Minting", function () {
+    it("should allow only approvers to approve minting", async () => {
       await token.connect(owner).approveMint();
       await token.connect(addr1).approveMint();
       await token.connect(addr2).approveMint();
       
-      const amount = 100;
-      await token.connect(owner).mint(addr3.address, amount);
-      expect(await token.balanceOf(addr3.address)).to.equal(ethers.parseUnits("100", 18));
+      expect(await token.mintApprovals(owner.address)).to.be.true;
+      expect(await token.mintApprovals(addr1.address)).to.be.true;
+      expect(await token.mintApprovals(addr2.address)).to.be.true;
+    });
 
-      // Non-multisig address should fail
+    it("should fail when non-approver tries to approve minting", async () => {
       await expect(
-        token.connect(addr4).approveMint()
+        token.connect(addr3).approveMint()
       ).to.be.revertedWith("Not authorized to approve mint");
     });
 
-    it("should require all 3 approvals before minting", async () => {
+    it("should mint tokens after all approvers approve", async () => {
       await token.connect(owner).approveMint();
       await token.connect(addr1).approveMint();
-      // Missing addr2 approval
+      await token.connect(addr2).approveMint();
       
-      const amount = 100;
+      const mintAmount = 100;
+      await token.connect(owner).mint(addr3.address, mintAmount);
+      
+      expect(await token.balanceOf(addr3.address)).to.equal(ethers.parseUnits("100", 18));
+    });
+
+    it("should fail minting without all approvals", async () => {
+      await token.connect(owner).approveMint();
+      await token.connect(addr1).approveMint();
+      // addr2 hasn't approved yet
+      
       await expect(
-        token.connect(owner).mint(addr3.address, amount)
+        token.connect(owner).mint(addr3.address, 100)
       ).to.be.revertedWith("Not all approvers have approved mint");
     });
 
-    it("should reset approvals after successful mint", async () => {
+    it("should reset approvals after minting", async () => {
       await token.connect(owner).approveMint();
       await token.connect(addr1).approveMint();
       await token.connect(addr2).approveMint();
       
       await token.connect(owner).mint(addr3.address, 100);
       
-      // Approvals should be reset
       expect(await token.mintApprovals(owner.address)).to.be.false;
       expect(await token.mintApprovals(addr1.address)).to.be.false;
       expect(await token.mintApprovals(addr2.address)).to.be.false;
     });
+
+    it("should fail minting when called by non-owner", async () => {
+      await token.connect(owner).approveMint();
+      await token.connect(addr1).approveMint();
+      await token.connect(addr2).approveMint();
+      
+      await expect(
+        token.connect(addr3).mint(addr4.address, 100)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
   });
 
-  describe("Multi-Signature Withdrawal", function () {
+  describe("Multi-Sig Withdrawal", function () {
     beforeEach(async () => {
-      // Add some ETH to contract
-      await addr1.sendTransaction({ to: await token.getAddress(), value: ethers.parseEther("1") });
+      // Add ETH to contract for withdrawal testing
+      await addr3.sendTransaction({ to: await token.getAddress(), value: ethers.parseEther("10") });
     });
 
-    it("should allow only multisig owners to approve withdrawal", async () => {
+    it("should allow only approvers to approve withdrawal", async () => {
       await token.connect(owner).approveWithdraw();
       await token.connect(addr1).approveWithdraw();
       
-      await token.connect(owner).withdraw(addr3.address, ethers.parseEther("0.5"));
-      expect(await ethers.provider.getBalance(addr3.address)).to.be.gt(0);
+      expect(await token.withdrawApprovals(owner.address)).to.be.true;
+      expect(await token.withdrawApprovals(addr1.address)).to.be.true;
+    });
 
-      // Non-multisig address should fail
+    it("should fail when non-approver tries to approve withdrawal", async () => {
       await expect(
-        token.connect(addr4).approveWithdraw()
+        token.connect(addr3).approveWithdraw()
       ).to.be.revertedWith("Not authorized to approve withdrawal");
     });
 
-    it("should require at least 2 approvals for withdrawal", async () => {
+    it("should withdraw ETH after 2 out of 3 approvals", async () => {
       await token.connect(owner).approveWithdraw();
-      // Only 1 approval, need 2
+      await token.connect(addr1).approveWithdraw();
+      
+      const withdrawAmount = ethers.parseEther("5");
+      const initialBalance = await ethers.provider.getBalance(addr4.address);
+      
+      await token.connect(owner).withdraw(addr4.address, withdrawAmount);
+      
+      const finalBalance = await ethers.provider.getBalance(addr4.address);
+      expect(finalBalance).to.equal(initialBalance + withdrawAmount);
+    });
+
+    it("should fail withdrawal with insufficient approvals", async () => {
+      await token.connect(owner).approveWithdraw();
+      // Only 1 approval, need at least 2
       
       await expect(
-        token.connect(owner).withdraw(addr3.address, ethers.parseEther("0.5"))
+        token.connect(owner).withdraw(addr4.address, ethers.parseEther("1"))
       ).to.be.revertedWith("At least 2 approvals required");
     });
 
-    it("should reset approvals after successful withdrawal", async () => {
+    it("should fail withdrawal with insufficient contract balance", async () => {
       await token.connect(owner).approveWithdraw();
       await token.connect(addr1).approveWithdraw();
       
-      await token.connect(owner).withdraw(addr3.address, ethers.parseEther("0.5"));
-      
-      // Approvals should be reset
-      expect(await token.withdrawApprovals(owner.address)).to.be.false;
-      expect(await token.withdrawApprovals(addr1.address)).to.be.false;
+      const largeAmount = ethers.parseEther("20"); // More than contract has
+      await expect(
+        token.connect(owner).withdraw(addr4.address, largeAmount)
+      ).to.be.revertedWith("Insufficient contract balance");
     });
 
-    it("should fail withdrawal with insufficient balance", async () => {
+    it("should reset withdrawal approvals after execution", async () => {
+      await token.connect(owner).approveWithdraw();
+      await token.connect(addr1).approveWithdraw();
+      
+      await token.connect(owner).withdraw(addr4.address, ethers.parseEther("1"));
+      
+      expect(await token.withdrawApprovals(owner.address)).to.be.false;
+      expect(await token.withdrawApprovals(addr1.address)).to.be.false;
+      expect(await token.withdrawApprovals(addr2.address)).to.be.false;
+    });
+
+    it("should fail withdrawal when called by non-owner", async () => {
       await token.connect(owner).approveWithdraw();
       await token.connect(addr1).approveWithdraw();
       
       await expect(
-        token.connect(owner).withdraw(addr3.address, ethers.parseEther("2"))
-      ).to.be.revertedWith("Insufficient contract balance");
+        token.connect(addr3).withdraw(addr4.address, ethers.parseEther("1"))
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
   });
 
   describe("Security Tests", function () {
-    it("should prevent unauthorized minting (security test)", async () => {
+    it("should prevent unauthorized access to minting", async () => {
       await expect(
-        token.connect(addr4).mint(addr3.address, 100)
+        token.connect(addr3).mint(addr4.address, 100)
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
-    it("should prevent unauthorized withdrawal (security test)", async () => {
+    it("should prevent unauthorized access to withdrawal", async () => {
       await expect(
-        token.connect(addr4).withdraw(addr3.address, ethers.parseEther("0.1"))
+        token.connect(addr3).withdraw(addr4.address, ethers.parseEther("1"))
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
-    it("should handle zero address validation", async () => {
-      const zeroAddresses = [ethers.ZeroAddress, ethers.ZeroAddress, ethers.ZeroAddress];
-      const MyToken = await ethers.getContractFactory("MyToken");
+    it("should handle edge case with zero ETH conversion", async () => {
+      await expect(
+        addr3.sendTransaction({ to: await token.getAddress(), value: 0 })
+      ).to.be.revertedWith("Insufficient ETH sent for conversion");
+    });
+  });
+
+  describe("Gas Optimization", function () {
+    it("should use reasonable gas for token transfers", async () => {
+      await addr3.sendTransaction({ to: await token.getAddress(), value: ethers.parseEther("1") });
       
-      await expect(
-        MyToken.deploy(zeroAddresses)
-      ).to.be.revertedWith("Approver cannot be zero address");
+      const tx = await token.connect(addr3).transfer(addr4.address, ethers.parseUnits("100", 18));
+      const receipt = await tx.wait();
+      
+      // Gas usage should be reasonable for ERC20 transfer
+      expect(receipt!.gasUsed).to.be.lt(100000);
     });
   });
 }); 
